@@ -1,0 +1,14 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+npm-debug.log*
+.DS_Store
+server/prisma/dev.db
+server/prisma/dev.db-journal
+server/dist/
+client/dist/
+.vite/
+coverage/

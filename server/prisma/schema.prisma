@@ -1,0 +1,200 @@
+// Aquarium Shop Business Software — data model
+// SQLite by default (zero-config); point DATABASE_URL at Postgres/MySQL for production.
+//
+// SQLite has no native enum type, so "enum-like" fields below are plain Strings
+// constrained by Zod at the API layer (see server/src/routes/*.ts). Valid values:
+//   Role:                ADMIN | MANAGER | STAFF
+//   ProductType:          LIVESTOCK | PLANT | EQUIPMENT | FOOD | CHEMICAL | DECOR | SUPPLY | OTHER
+//   WaterType:            FRESHWATER | SALTWATER | BRACKISH | NA
+//   CareLevel:            EASY | MODERATE | DIFFICULT | EXPERT
+//   HealthStatus:         HEALTHY | QUARANTINE | SICK | DECEASED | NA
+//   PaymentMethod:        CASH | CARD | STORE_CREDIT | OTHER
+//   SaleStatus:           COMPLETED | REFUNDED | PARTIALLY_REFUNDED | VOID
+//   PurchaseOrderStatus:  DRAFT | ORDERED | PARTIALLY_RECEIVED | RECEIVED | CANCELLED
+//   StockMovementType:    SALE | PURCHASE_RECEIPT | ADJUSTMENT | RETURN | MORTALITY | INITIAL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("STAFF")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sales            Sale[]
+  stockMovements   StockMovement[]
+  purchaseOrders   PurchaseOrder[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  type      String   @default("OTHER")
+  createdAt DateTime @default(now())
+
+  products Product[]
+}
+
+model Supplier {
+  id          String   @id @default(cuid())
+  name        String
+  contactName String?
+  email       String?
+  phone       String?
+  address     String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  products        Product[]
+  purchaseOrders  PurchaseOrder[]
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  sku           String   @unique
+  name          String
+  description   String?
+  type          String   @default("OTHER")
+  categoryId    String?
+  category      Category? @relation(fields: [categoryId], references: [id])
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+
+  costPrice     Float    @default(0)
+  sellPrice     Float    @default(0)
+  quantity      Int      @default(0)
+  reorderLevel  Int      @default(5)
+  unit          String   @default("unit")
+  imageUrl      String?
+  isActive      Boolean  @default(true)
+
+  // Livestock / plant biological attributes (nullable — only relevant for LIVESTOCK/PLANT)
+  species          String?
+  scientificName   String?
+  waterType        String?  @default("NA")
+  careLevel        String?
+  temperamentType  String?
+  minTankSizeGallons Float?
+  tempRangeLowF    Float?
+  tempRangeHighF   Float?
+  phLow            Float?
+  phHigh           Float?
+  healthStatus     String?  @default("NA")
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  saleItems           SaleItem[]
+  purchaseOrderItems  PurchaseOrderItem[]
+  stockMovements      StockMovement[]
+
+  @@index([type])
+  @@index([name])
+}
+
+model Customer {
+  id            String   @id @default(cuid())
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  notes         String?
+  loyaltyPoints Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sales Sale[]
+}
+
+model Sale {
+  id             String    @id @default(cuid())
+  saleNumber     String    @unique
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+
+  subtotal       Float     @default(0)
+  taxRate        Float     @default(0)
+  taxAmount      Float     @default(0)
+  discountAmount Float     @default(0)
+  total          Float     @default(0)
+
+  paymentMethod  String    @default("CASH")
+  status         String    @default("COMPLETED")
+  notes          String?
+
+  createdAt      DateTime  @default(now())
+
+  items SaleItem[]
+}
+
+model SaleItem {
+  id         String  @id @default(cuid())
+  saleId     String
+  sale       Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product @relation(fields: [productId], references: [id])
+  quantity   Int
+  unitPrice  Float
+  lineTotal  Float
+}
+
+model PurchaseOrder {
+  id           String    @id @default(cuid())
+  poNumber     String    @unique
+  supplierId   String
+  supplier     Supplier  @relation(fields: [supplierId], references: [id])
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+
+  status       String    @default("DRAFT")
+  orderDate    DateTime  @default(now())
+  expectedDate DateTime?
+  receivedDate DateTime?
+  notes        String?
+  total        Float     @default(0)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  items PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id               String        @id @default(cuid())
+  purchaseOrderId  String
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  productId        String
+  product          Product       @relation(fields: [productId], references: [id])
+  quantityOrdered  Int
+  quantityReceived Int           @default(0)
+  unitCost         Float
+}
+
+model StockMovement {
+  id             String   @id @default(cuid())
+  productId      String
+  product        Product  @relation(fields: [productId], references: [id])
+  type           String
+  quantityChange Int
+  reason         String?
+  referenceId    String?
+  userId         String?
+  user           User?    @relation(fields: [userId], references: [id])
+  createdAt      DateTime @default(now())
+
+  @@index([productId])
+}

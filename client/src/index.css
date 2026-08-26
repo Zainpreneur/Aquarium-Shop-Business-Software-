@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ocean-50: #eefbff;
+  --color-ocean-100: #d7f4ff;
+  --color-ocean-200: #b3eaff;
+  --color-ocean-300: #7cdcff;
+  --color-ocean-400: #3ec6f7;
+  --color-ocean-500: #14a7e0;
+  --color-ocean-600: #0985bd;
+  --color-ocean-700: #0a6a99;
+  --color-ocean-800: #0e577d;
+  --color-ocean-900: #0f4968;
+  --color-coral-500: #ff7a59;
+  --color-coral-600: #f0603d;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+@layer components {
+  .input {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    outline: none;
+    background-color: #fff;
+    color: #0f2733;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .input:focus {
+    border-color: var(--color-ocean-500);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-ocean-500) 15%, transparent);
+  }
+  .input:disabled {
+    background-color: #f8fafc;
+    color: #94a3b8;
+  }
+}
+
+body {
+  background-color: #f4faff;
+  color: #0f2733;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #bfe6f5;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
